@@ -13,7 +13,7 @@ import (
 
 func init() {
 	format := &log.TextFormatter{
-		TimestampFormat:           "2006-01-02 15:04:05", // 据说这个日期是GO语言的诞生时间,格式化时就必须要传这个时间,传其他的时间都会有问题.
+		TimestampFormat: "2006-01-02 15:04:05", // 据说这个日期是GO语言的诞生时间,格式化时就必须要传这个时间,传其他的时间都会有问题.
 	}
 	log.SetFormatter(format)
 	log.SetOutput(os.Stdout)
@@ -35,6 +35,9 @@ func main() {
 		return
 	}
 	log.Println("redis-agent server start ok...")
+	log.Println("Submit a Get  request to http://ip:6389/serverStatus to test server is ok")
+	log.Println("Submit a Post request to http://ip:6389/cleanTask to start cleaning up the data, param like this {\"taskId\":1234,\"cursor\":0,\"userName\":\"snrs\",\"status\":0,\"startTime\":null,\"lastScanTime\":null,\"keyCount\":0}")
+	log.Println("Submit a Get  request to http://ip:6389/cleanTask/{taskId} to get task information")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)

@@ -14,7 +14,6 @@ import (
 	"time"
 )
 
-
 type RedisAgentServer struct {
 	cleaner    *cleaner.SystemDataCleaner
 	httpServer *http.Server
@@ -33,6 +32,8 @@ func NewRedisAgentServer(addr string, cleaner *cleaner.SystemDataCleaner) *Redis
 	router.HandleFunc("/cleanTask", agentServer.clean).Methods("POST")
 	// 获取清理任务状态
 	router.HandleFunc("/cleanTask/{taskId}", agentServer.reportProgress).Methods("GET")
+
+	router.HandleFunc("/serverStatus", agentServer.serverStatus).Methods("GET")
 
 	agentServer.httpServer.Handler = middleware.Logging(middleware.Validating(router))
 	return agentServer
@@ -85,7 +86,7 @@ func (agentServer *RedisAgentServer) clean(w http.ResponseWriter, req *http.Requ
 		agentServer.cleaner.ExecuteClean(&taskInfo)
 	}()
 
-	response(w, SucWithMsg("提交数据清理任务成功"))
+	response(w, SucWithMsg("submit data clean task is success"))
 }
 
 // reportProgress 上报清理进度
@@ -100,12 +101,16 @@ func (agentServer *RedisAgentServer) reportProgress(w http.ResponseWriter, req *
 	log.Infof("report task progress %s", taskId)
 	taskIdInt, err := strconv.Atoi(taskId)
 	if err != nil {
-		http.Error(w, "parseInt taskId error: " + taskId, http.StatusBadRequest)
+		http.Error(w, "parseInt taskId error: "+taskId, http.StatusBadRequest)
 		return
 	}
 
 	taskInfo := agentServer.cleaner.Report(taskIdInt)
 	response(w, SucWithData(taskInfo))
+}
+
+func (agentServer *RedisAgentServer) serverStatus(w http.ResponseWriter, _ *http.Request) {
+	response(w, SucWithMsg("OK"))
 }
 
 func response(w http.ResponseWriter, v interface{}) {
