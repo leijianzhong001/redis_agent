@@ -8,8 +8,8 @@ ARG REDIS_EXPORTER_VERSION="1.0.1"
 RUN  apk add --no-cache curl ca-certificates && \
       curl -fL -Lo /tmp/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz \
       ${EXPORTER_URL}/v${REDIS_EXPORTER_VERSION}/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
-      cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz
-RUN chmod a+x /usr/local/bin/redis_agent
+      cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
+      chmod a+x /tmp/redis_agent
 
 FROM scratch
 
