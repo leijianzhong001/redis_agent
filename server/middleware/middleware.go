@@ -20,7 +20,7 @@ func Validating(next http.Handler) http.Handler {
 		if err != nil {
 			log.Info("Content-Type is nil, set Content-Type to application/json")
 			req.Header.Set("Content-Type", "application/json")
-			mediaType, _, _ = mime.ParseMediaType(contentType)
+			mediaType, _, _ = mime.ParseMediaType(req.Header.Get("Content-Type"))
 		}
 
 		if mediaType != "application/json" {
