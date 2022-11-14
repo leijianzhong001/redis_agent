@@ -18,9 +18,10 @@ func Validating(next http.Handler) http.Handler {
 		contentType := req.Header.Get("Content-Type")
 		mediaType, _, err := mime.ParseMediaType(contentType)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			log.Info("Content-Type is nil, set Content-Type to application/json")
+			req.Header.Set("Content-Type", "application/json")
 		}
+
 		if mediaType != "application/json" {
 			http.Error(w, "invalid Content-Type", http.StatusUnsupportedMediaType)
 			return

@@ -21,7 +21,6 @@ func init() {
 }
 
 func main() {
-
 	cleanerX, err := cleaner.NewCleaner()
 	if err != nil {
 		panic(err)
