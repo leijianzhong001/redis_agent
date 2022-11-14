@@ -20,6 +20,7 @@ LABEL VERSION=1.0.0 \
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
+RUN chmod a+x /usr/local/bin/redis_agent
 
 EXPOSE 6389
 
