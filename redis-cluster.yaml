@@ -33,7 +33,7 @@ spec:
   sidecars:
     - name: "redis-agent"
       image: "registry.cn-hangzhou.aliyuncs.com/leijianzhong/redis_agent:1.0.1"
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: Always
       resources:
         requests:
           cpu: 100m
