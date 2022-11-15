@@ -25,4 +25,4 @@ COPY --from=builder /tmp/somefile.txt /usr/local/bin/somefile.txt
 
 EXPOSE 6389
 
-ENTRYPOINT ["/usr/local/bin/redis_agent"]
+ENTRYPOINT ["while true; do echo 'this  will run every 2 seconds' ; sleep 1; done"]
