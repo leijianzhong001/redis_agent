@@ -8,8 +8,7 @@ ARG REDIS_EXPORTER_VERSION="1.0.1"
 RUN  apk add --no-cache curl ca-certificates && \
       curl -fL -Lo /tmp/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz \
       ${EXPORTER_URL}/v${REDIS_EXPORTER_VERSION}/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
-      cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
-      touch /tmp/somefile.txt
+      cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz
 
 FROM scratch
 
@@ -21,8 +20,7 @@ LABEL VERSION=1.0.0 \
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
-COPY --from=builder /tmp/somefile.txt /usr/local/bin/somefile.txt
 
 EXPOSE 6389
 
-ENTRYPOINT ["while true; do echo 'this  will run every 2 seconds' ; sleep 1; done"]
+ENTRYPOINT ["/usr/local/bin/redis_agent"]
