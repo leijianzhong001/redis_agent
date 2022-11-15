@@ -26,4 +26,4 @@ COPY --from=builder /tmp/somefile.txt /usr/local/bin/somefile.txt
 EXPOSE 6389
 
 # /bin/sh
-ENTRYPOINT ["while true; do echo 'this  will run every 1 seconds bbb' ; sleep 1; done"]
+ENTRYPOINT ["/bin/sh", "-c", "while true; do echo 'this  will run every 1 seconds bbb' ; sleep 1; done"]
