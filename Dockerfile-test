@@ -11,7 +11,7 @@ RUN  apk add --no-cache curl ca-certificates && \
       cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
       touch /tmp/somefile.txt
 
-FROM alpine:3.15
+FROM debian:bullseye-slim
 
 MAINTAINER Lei Jianzhong
 
@@ -25,4 +25,5 @@ COPY --from=builder /tmp/somefile.txt /usr/local/bin/somefile.txt
 
 EXPOSE 6389
 
+# /bin/sh
 ENTRYPOINT ["while true; do echo 'this  will run every 1 seconds aaa' ; sleep 1; done"]
