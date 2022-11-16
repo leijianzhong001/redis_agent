@@ -22,6 +22,9 @@ LABEL VERSION=1.0.0 \
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
 
+# 因为是在contos下编译的，动态链接库的位置是/lib64, 而alpine的链接库是在lib下，所以这里创建一个软连接到/lib64下
+RUN  mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+
 EXPOSE 6389
 
 ENTRYPOINT ["/usr/local/bin/redis_agent"]
