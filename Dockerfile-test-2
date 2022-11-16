@@ -16,11 +16,11 @@ MAINTAINER Lei Jianzhong
 
 LABEL VERSION=1.0.0 \
       ARCH=AMD64 \
-      DESCRIPTION="A redis data clean tool"
+      DESCRIPTION="A redis data clean tool aaa"
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
 
 EXPOSE 6389
 
-ENTRYPOINT ["/usr/local/bin/redis_agent"]
+ENTRYPOINT ["/bin/sh", "-c", "/usr/local/bin/redis_agent"]
