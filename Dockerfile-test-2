@@ -16,11 +16,11 @@ MAINTAINER Lei Jianzhong
 
 LABEL VERSION=1.0.0 \
       ARCH=AMD64 \
-      DESCRIPTION="A redis data clean tool aaa"
+      DESCRIPTION="A redis data clean tool bbb"
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
 
 EXPOSE 6389
 
-ENTRYPOINT ["/bin/sh", "-c", "/usr/local/bin/redis_agent"]
+ENTRYPOINT ["/bin/sh", "-c", "while true; do echo 'this  will run every 1 seconds ccc' ; sleep 1; done"]
