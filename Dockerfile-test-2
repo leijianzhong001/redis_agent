@@ -24,4 +24,4 @@ COPY --from=builder /tmp/redis_agent /usr/local/bin/redis_agent
 
 EXPOSE 6389
 
-ENTRYPOINT ["/bin/sh", "-c", "while true; do echo 'this  will run every 1 seconds ccc' ; sleep 1; done"]
+ENTRYPOINT ["/usr/local/bin/redis_agent"]
