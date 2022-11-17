@@ -1,0 +1,14 @@
+FROM alpine:latest
+
+MAINTAINER Lei Jianzhong
+
+LABEL VERSION=1.0.0 \
+      ARCH=AMD64 \
+      DESCRIPTION="A shell tool box"
+
+RUN apk update && apk upgrade && apk add bash && apk add bash-doc && apk add bash-completion && \
+    sed -i 's/root:x:0:0:root:\/root:\/bin\/ash/root:x:0:0:root:\/root:\/bin\/bash/g' /etc/passwd && \
+    apk add curl && apk add busybox-extras
+
+# /bin/sh -c "/usr/local/bin/redis_agent"
+ENTRYPOINT ["/bin/bash"]
