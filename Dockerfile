@@ -8,14 +8,13 @@ ARG REDIS_EXPORTER_VERSION="1.0.1"
 RUN  apk add --no-cache curl ca-certificates && \
       curl -fL -Lo /tmp/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz \
       ${EXPORTER_URL}/v${REDIS_EXPORTER_VERSION}/redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz && \
-      mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2 && \
       cd /tmp && tar -xvzf redis_agent-v${REDIS_EXPORTER_VERSION}.linux-amd64.tar.gz
 
-FROM scratch
+FROM alpine:3.15
 
 MAINTAINER Lei Jianzhong
 
-LABEL VERSION=1.0.0 \
+LABEL VERSION=1.0.1 \
       ARCH=AMD64 \
       DESCRIPTION="A redis data clean tool"
 
@@ -27,4 +26,5 @@ RUN  mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.
 
 EXPOSE 6389
 
+# /bin/sh -c "/usr/local/bin/redis_agent"
 ENTRYPOINT ["/usr/local/bin/redis_agent"]
