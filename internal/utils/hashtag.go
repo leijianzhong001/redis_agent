@@ -10,7 +10,7 @@ const slotNumber = 16384
 // Copyright 2001-2010 Georges Menie (www.menie.org)
 // Copyright 2013 The Go Authors. All rights reserved.
 // http://redis.io/topics/cluster-spec#appendix-a-crc16-reference-implementation-in-ansi-c
-var crc16tab = [256]uint16{
+var crc16tabNew = [256]uint16{
 	0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
 	0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
 	0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
@@ -70,7 +70,7 @@ func Slot(key string) int {
 
 func crc16sum(key string) (crc uint16) {
 	for i := 0; i < len(key); i++ {
-		crc = (crc << 8) ^ crc16tab[(byte(crc>>8)^key[i])&0x00ff]
+		crc = (crc << 8) ^ crc16tabNew[(byte(crc>>8)^key[i])&0x00ff]
 	}
 	return
 }

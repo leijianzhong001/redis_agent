@@ -28,10 +28,10 @@ func NewRedisAgentServer(addr string, cleaner *cleaner.SystemDataCleaner) *Redis
 	}
 
 	router := mux.NewRouter()
-	// 数据清理
-	router.HandleFunc("/cleanTask", agentServer.clean).Methods("POST")
+	// 创建数据清理
+	router.HandleFunc("/task", agentServer.createTask).Methods("POST")
 	// 获取清理任务状态
-	router.HandleFunc("/cleanTask/{taskId}", agentServer.reportProgress).Methods("GET")
+	router.HandleFunc("/task/{taskId}", agentServer.reportProgress).Methods("GET")
 
 	router.HandleFunc("/serverStatus", agentServer.serverStatus).Methods("GET")
 
@@ -69,24 +69,33 @@ func (agentServer *RedisAgentServer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// clean 清理指定用户的数据
-func (agentServer *RedisAgentServer) clean(w http.ResponseWriter, req *http.Request) {
+// createTask 清理指定用户的数据
+func (agentServer *RedisAgentServer) createTask(w http.ResponseWriter, req *http.Request) {
 	dec := json.NewDecoder(req.Body)
-	var taskInfo task.DataCleanTaskInfo
+	var taskInfo task.GenericTaskInfo
 	if err := dec.Decode(&taskInfo); err != nil {
 		log.Error("decode Request.body error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	log.Infof("recieve clean task param %+v", taskInfo)
+	log.Infof("recieve create task param %+v", taskInfo)
+
+	if !taskInfo.CheckTaskType() {
+		response(w, FailWithMsg("task Type must be 0 or 1"))
+	}
 
 	// 另外启动一个goroutine异步执行
 	go func() {
-		agentServer.cleaner.ExecuteClean(&taskInfo)
+		switch taskInfo.TaskType {
+		case task.CLEAN:
+			agentServer.cleaner.ExecuteClean(&taskInfo)
+		case task.STATISTIC:
+
+		}
 	}()
 
-	response(w, SucWithMsg("submit data clean task is success"))
+	response(w, SucWithMsg("submit data createTask task is success"))
 }
 
 // reportProgress 上报清理进度
@@ -105,7 +114,7 @@ func (agentServer *RedisAgentServer) reportProgress(w http.ResponseWriter, req *
 		return
 	}
 
-	taskInfo := agentServer.cleaner.Report(taskIdInt)
+	taskInfo := task.Report(taskIdInt)
 	response(w, SucWithData(taskInfo))
 }
 
