@@ -21,3 +21,8 @@ func (o *StringObject) Rewrite() []RedisCmd {
 	cmd = append(cmd, "set", o.key, o.value)
 	return []RedisCmd{cmd}
 }
+
+// MemOverhead 计算当前key加载到redis中以后的内存开销
+func (o *StringObject) MemOverhead() uint64 {
+
+}

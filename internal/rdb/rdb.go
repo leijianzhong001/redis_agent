@@ -3,8 +3,8 @@ package rdb
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/binary"
-	"github.com/leijianzhong001/redis_agent/internal/config"
 	"github.com/leijianzhong001/redis_agent/internal/entry"
 	"github.com/leijianzhong001/redis_agent/internal/log"
 	"github.com/leijianzhong001/redis_agent/internal/rdb/structure"
@@ -171,9 +171,10 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			// 通过它执行的所有从reader(rd)中读取的操作都与相应的对writer(&value)的写入操作相匹配。没有内部缓冲——写入操作必须在读取操作完成之前完成。 写入时遇到的任何错误都将报告为读错误。
 			anotherReader := io.TeeReader(rd, &value)
 			o := types.ParseObject(anotherReader, typeByte, key)
-			// 本次value的值大于 512mb
-			if uint64(value.Len()) > config.Config.Advanced.TargetRedisProtoMaxBulkLen {
-				// 如果值大于512mb，将命令改为对应的redis api, 如string就是set
+
+			// 非过期的key
+			if ld.expireMs != 1 {
+				// 将key重写为对应的命令
 				cmds := o.Rewrite()
 				for _, cmd := range cmds {
 					e := entry.NewEntry()
@@ -182,34 +183,6 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 					e.Argv = cmd
 					ld.ch <- e
 				}
-				if ld.expireMs != 0 {
-					e := entry.NewEntry()
-					e.IsBase = true
-					e.DbId = ld.nowDBId
-					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-					ld.ch <- e
-				}
-			} else {
-				e := entry.NewEntry()
-				e.IsBase = true
-				e.DbId = ld.nowDBId
-				// 这里的意思应该是将的取到的value值转为dump以后的序列化形式，然后通过restore命令加载到redis内存中
-				v := ld.createValueDump(typeByte, value.Bytes())
-				// RESTORE key ttl serialized-value [REPLACE] [ABSTTL] [IDLETIME seconds] [FREQ frequency]
-				e.Argv = []string{"restore", key, strconv.FormatInt(ld.expireMs, 10), v} // 10代表10进制
-				if config.Config.Advanced.RDBRestoreCommandBehavior == "rewrite" {
-					if config.Config.Target.Version < 3.0 {
-						log.Panicf("RDB restore command behavior is rewrite, but target redis version is %f, not support REPLACE modifier", config.Config.Target.Version)
-					}
-					e.Argv = append(e.Argv, "replace")
-				}
-				if ld.idle != 0 && config.Config.Target.Version >= 5.0 {
-					e.Argv = append(e.Argv, "idletime", strconv.FormatInt(ld.idle, 10))
-				}
-				if ld.freq != 0 && config.Config.Target.Version >= 5.0 {
-					e.Argv = append(e.Argv, "freq", strconv.FormatInt(ld.freq, 10))
-				}
-				ld.ch <- e
 			}
 			// 复位
 			ld.expireMs = 0
@@ -219,6 +192,13 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 		select {
 		case <-tick:
 			UpdateRDBSentSize()
+
+			// 检查是否为主节点（因为可能发生主从切换）。
+			infoReplication, _ := utils.GetRedisClient().Info(context.Background(), "Replication").Result()
+			if utils.ParseInfoProp(infoReplication, "role") == "master" {
+				log.Warnf("current node is master, can't execute data analysis, terminal rdb read.")
+				return
+			}
 		default:
 		}
 	}

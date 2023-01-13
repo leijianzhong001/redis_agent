@@ -3,7 +3,6 @@ package rdb
 import (
 	"bufio"
 	"fmt"
-	"github.com/leijianzhong001/redis_agent/internal/reader"
 	"os"
 	"testing"
 )
@@ -27,12 +26,4 @@ func TestBioRead(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 	fmt.Printf("第二次读取%d个字节，内容为:%s\n", num, string(buf))
-}
-
-func TestReadRDB(t *testing.T) {
-	reader := reader.NewRDBReader("F:\\202212\\dump.rdb")
-	ch := reader.StartRead()
-	for entry := range ch {
-		fmt.Println(entry.Argv)
-	}
 }

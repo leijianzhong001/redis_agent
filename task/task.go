@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/leijianzhong001/redis_agent/internal/cleaner"
 	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
@@ -44,7 +43,17 @@ type GenericTaskInfo struct {
 	TaskLog []string `json:"taskLog"`
 }
 
-func (taskInfo *GenericTaskInfo) CleanTaskParam() (*cleaner.CleanTaskParam, error) {
+type CleanTaskParam struct {
+	// 当前游标
+	Cursor uint64 `json:"cursor"`
+	// 用户名称
+	UserName string `json:"userName"`
+}
+
+type StatisticTaskParam struct {
+}
+
+func (taskInfo *GenericTaskInfo) CleanTaskParam() (*CleanTaskParam, error) {
 	if taskInfo.TaskType != CLEAN {
 		return nil, errors.New(fmt.Sprintf("Task type error: %d, you can't call this method", taskInfo.TaskType))
 	}
@@ -54,7 +63,7 @@ func (taskInfo *GenericTaskInfo) CleanTaskParam() (*cleaner.CleanTaskParam, erro
 		return nil, err
 	}
 
-	var taskParam cleaner.CleanTaskParam
+	var taskParam CleanTaskParam
 	err = json.Unmarshal(paramJson, &taskParam)
 	if err != nil {
 		return nil, err
@@ -113,4 +122,12 @@ func FormatLog(log string) string {
 // Report task status to snrs
 func Report(taskId int) *GenericTaskInfo {
 	return tasks[taskId]
+}
+
+// AppendFailLog 追加失败日志
+func (taskInfo *GenericTaskInfo) AppendFailLog(log string) {
+	// 更新任务状态为失败
+	taskInfo.Status = FAIL
+	// 追加日志
+	taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog(log))
 }

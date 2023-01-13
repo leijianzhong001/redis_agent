@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/go-redis/redis/v8"
+	"strings"
 	"sync"
 )
 
@@ -24,4 +25,20 @@ func GetRedisClient() *redis.Client {
 		})
 	}
 	return RedisClient
+}
+
+// ParseInfoProp 解析Info原始信息中的指定值
+func ParseInfoProp(info string, prop string) string {
+	for _, ele := range strings.Split(info, "\r\n") {
+		propAndValue := strings.Split(ele, ":")
+		if len(propAndValue) < 2 {
+			continue
+		}
+		name := propAndValue[0]
+		value := propAndValue[1]
+		if prop == name {
+			return value
+		}
+	}
+	return ""
 }

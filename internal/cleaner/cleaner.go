@@ -16,13 +16,6 @@ var batchCount = 2000
 // 批次浮动值 每次操作的值大于batchCount-batchFloat就可以执行
 var batchFloat = 500
 
-type CleanTaskParam struct {
-	// 当前游标
-	Cursor uint64 `json:"cursor"`
-	// 用户名称
-	UserName string `json:"userName"`
-}
-
 type SystemDataCleaner struct{}
 
 func (cleaner *SystemDataCleaner) ExecuteClean(taskInfo *task.GenericTaskInfo) {

@@ -52,6 +52,7 @@ func (o *ListObject) readList(rd io.Reader) {
 }
 
 func (o *ListObject) readQuickList(rd io.Reader) {
+	// 这个是节点个数，不是元素个数
 	size := int(structure.ReadLength(rd))
 	for i := 0; i < size; i++ {
 		ziplistElements := structure.ReadZipList(rd)

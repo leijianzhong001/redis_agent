@@ -28,12 +28,13 @@ func ReadZipList(rd io.Reader) []string {
 
 	// The general layout of the ziplist is as follows:
 	// <zlbytes> <zltail> <zllen> <entry> <entry> ... <entry> <zlend>
-	_ = ReadUint32(rd) // zlbytes
-	_ = ReadUint32(rd) // zltail
+	_ = ReadUint32(rd) // zlbytes 整个压缩列表占用的字节数
+	_ = ReadUint32(rd) // zltail 尾节点的起始地址距离压缩列表起始地址的偏移量
 
-	size := int(ReadUint16(rd))
+	size := int(ReadUint16(rd)) // zllen 压缩列表中的元素数量
 	var elements []string
 	if size == 65535 { // 2^16-1, we need to traverse the entire list to know how many items it holds.
+		// 如果节点实际数量超出了最大值65534，则记录为65535，节点的真实数量只有完全遍历整个压缩列表才能知道
 		for firstByte := ReadByte(rd); firstByte != 0xFE; firstByte = ReadByte(rd) {
 			ele := readZipListEntry(rd, firstByte)
 			elements = append(elements, ele)
@@ -60,6 +61,12 @@ func ReadZipList(rd io.Reader) []string {
  * the following encoding is used:
  *
  * 0xFE <4 bytes unsigned little endian prevlen> <encoding> <entry>
+ *
+ * 1、`previous_entry_length`：**前一节点**的长度，占1个或5个字节。
+ *  	- 如果前一节点的**长度小于254字节**，则采用1个字节来保存这个长度值
+ *      - 如果前一节点的**长度大于254字节**，则采用5个字节来保存这个长度值， 第一个字节为`0xFE` ，后四个字节才是真实长度数据
+ * 2、`encoding`：编码属性，**记录`content`的数据类型**（字符串还是整数）以及长度，占用1个、2个或5个字节
+ * 3、`contents`：负责保存节点的数据，可以是字符串或整数
  */
 func readZipListEntry(rd io.Reader, firstByte byte) string {
 	// read prevlen
