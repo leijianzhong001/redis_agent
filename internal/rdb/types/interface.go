@@ -2,8 +2,12 @@ package types
 
 import (
 	"github.com/leijianzhong001/redis_agent/internal/log"
+	"github.com/leijianzhong001/redis_agent/internal/utils"
 	"io"
 )
+
+// memProfiler MemProfiler对象
+var memProfiler = utils.MemProfiler{}
 
 const (
 	// StringType is redis string
