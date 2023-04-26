@@ -38,3 +38,7 @@ func (o *ModuleObject) Rewrite() []RedisCmd {
 	log.Panicf("module Rewrite not implemented")
 	return nil
 }
+
+func (o *ModuleObject) MemOverhead() uint64 {
+	return 0
+}

@@ -246,3 +246,7 @@ func nextString(inx *int, elements []string) string {
 func (o *StreamObject) Rewrite() []RedisCmd {
 	return o.cmds
 }
+
+func (o *StreamObject) MemOverhead() uint64 {
+	return 0
+}

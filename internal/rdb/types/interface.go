@@ -66,6 +66,7 @@ type RedisCmd []string
 type RedisObject interface {
 	LoadFromBuffer(rd io.Reader, key string, typeByte byte)
 	Rewrite() []RedisCmd
+	MemOverhead() uint64
 }
 
 func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
