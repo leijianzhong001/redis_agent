@@ -14,7 +14,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: go-build
+all: go-build docker-build docker-push
 
 # 这里的意思是将main.go编译为 bin/redis-agent
 go-build: fmt vet
