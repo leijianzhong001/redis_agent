@@ -3,7 +3,7 @@
 VERSION ?= v1.0.2
 
 # Image URL to use all building/pushing image targets
-IMG ?= registry.cn-hangzhou.aliyuncs.com/leijianzhong/redis_agent:$(VERSION)
+IMG ?= registry.cn-hangzhou.aliyuncs.com/leijianzhong/redis-agent:$(VERSION)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 # 如果 go env GOBIN 为空，则从 $GOPATH/bin下查找可执行文件
