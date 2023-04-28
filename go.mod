@@ -9,6 +9,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.3
 	github.com/rs/zerolog v1.28.0
 	github.com/sirupsen/logrus v1.9.0
+	github.com/lucasepe/codename v0.2.0
 )
 
 require (

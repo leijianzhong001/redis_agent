@@ -19,6 +19,7 @@ const (
 const (
 	CLEAN     = iota // CLEAN 数据清理
 	STATISTIC        // STATISTIC 内存占用统计
+	GENERATOR = 2
 )
 
 var locker sync.RWMutex
@@ -41,8 +42,12 @@ type GenericTaskInfo struct {
 	KeyCount int `json:"keyCount"`
 	// 任务日志
 	TaskLog []string `json:"taskLog"`
+
+	// 任务参数对象，从TaskParam中反序列化得到
+	TaskParamObj interface{}
 }
 
+// CleanTaskParam 数据清理任务独有参数
 type CleanTaskParam struct {
 	// 当前游标
 	Cursor uint64 `json:"cursor"`
@@ -50,12 +55,14 @@ type CleanTaskParam struct {
 	UserName string `json:"userName"`
 }
 
+// StatisticTaskParam 数据统计任务独有参数
 type StatisticTaskParam struct {
 }
 
+// CleanTaskParam 从map中得到CleanTaskParam参数
 func (taskInfo *GenericTaskInfo) CleanTaskParam() (*CleanTaskParam, error) {
 	if taskInfo.TaskType != CLEAN {
-		return nil, errors.New(fmt.Sprintf("Task type error: %d, you can't call this method", taskInfo.TaskType))
+		return nil, errors.New(fmt.Sprintf("Task type error: %d, you can't call this method CleanTaskParam", taskInfo.TaskType))
 	}
 
 	paramJson, err := json.Marshal(taskInfo.TaskParam)
@@ -71,11 +78,39 @@ func (taskInfo *GenericTaskInfo) CleanTaskParam() (*CleanTaskParam, error) {
 	return &taskParam, nil
 }
 
-func (taskInfo *GenericTaskInfo) CheckTaskType() bool {
-	if taskInfo.TaskType != CLEAN && taskInfo.TaskType != STATISTIC {
-		return false
+// GenerateUserDataParam 从map中得到CleanTaskParam参数
+func (taskInfo *GenericTaskInfo) GenerateUserDataParam() (*GenerateUserDataParam, error) {
+	if taskInfo.TaskType != GENERATOR {
+		return nil, errors.New(fmt.Sprintf("Task type error: %d, you can't call this method generateUserDataParam", taskInfo.TaskType))
 	}
-	return true
+
+	if taskInfo.TaskParamObj != nil {
+		obj := taskInfo.TaskParamObj
+		if v, ok := obj.(*GenerateUserDataParam); ok {
+			return v, nil
+		}
+	}
+
+	paramJson, err := json.Marshal(taskInfo.TaskParam)
+	if err != nil {
+		return nil, err
+	}
+
+	var taskParam GenerateUserDataParam
+	err = json.Unmarshal(paramJson, &taskParam)
+	if err != nil {
+		return nil, err
+	}
+
+	taskInfo.TaskParamObj = &taskParam
+	return &taskParam, nil
+}
+
+func (taskInfo *GenericTaskInfo) CheckTaskType() error {
+	if taskInfo.TaskType != CLEAN && taskInfo.TaskType != STATISTIC && taskInfo.TaskType != GENERATOR {
+		return errors.New("task Type must be 0/1/2")
+	}
+	return nil
 }
 
 func (taskInfo *GenericTaskInfo) CreateTask() error {
