@@ -109,8 +109,8 @@ func (o *ListObject) MemOverhead() uint64 {
 		if currentZipListSize+currentEntrySize > maxZipListSize {
 			// 说明当前ziplist已经满了，此时将quickListNode数量 + 1
 			quickListNodeCount++
-			// 累加ziplist长度
-			dataOverhead += currentZipListSize
+			// 累加ziplist长度，到这个地方应用jmalloc规则分配一次内存
+			dataOverhead += utils.MallocOverhead(currentZipListSize)
 			// 满了以后重置当前zipList长度，开始下一个zipList累加
 			currentZipListSize = utils.ZiplistOverhead()
 		} else {

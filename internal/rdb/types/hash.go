@@ -95,4 +95,5 @@ func (o *HashObject) MemOverhead() uint64 {
 	// field_bucket个数 * 指针大小
 	fieldBucketOverhead := utils.FieldBucketOverhead(uint64(len(o.value)))
 	return topLevelObjOverhead + dataOverhead + fieldBucketOverhead
+	// todo 加过期时间开销
 }

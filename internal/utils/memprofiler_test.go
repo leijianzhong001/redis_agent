@@ -6,14 +6,15 @@ import (
 )
 
 func TestMallocOverhead(t *testing.T) {
-	bin := mallocOverhead(20)
+	bin := MallocOverhead(20)
 	if bin != 32 {
 		t.Error("")
 	}
 }
 
 func TestZslRandomLevelFunc(t *testing.T) {
-	for i := 0; i < 10000; i++ {
-		fmt.Println(ZslRandomLevel())
+	levelAndElementCount := GenLevelAndLevelSize(10000000)
+	for i, u := range levelAndElementCount {
+		fmt.Printf("level: %d, count: %d\n", i, u)
 	}
 }

@@ -30,5 +30,6 @@ func (o *StringObject) Rewrite() []RedisCmd {
 // 		1个`redisObject`结构，16字节，用作val对象（这个`redisObject`对象就是`dictEntry`中的共用体v）；
 // 		1个SDS结构，用作val字符串，占`4~18`个字节;
 func (o *StringObject) MemOverhead() uint64 {
+	// todo 加过期时间开销
 	return utils.DictEntryOverhead() + utils.SdsOverhead(o.key) + utils.StringValueOverhead(o.value)
 }

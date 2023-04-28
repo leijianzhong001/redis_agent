@@ -112,7 +112,11 @@ func (o *ZsetObject) MemOverhead() uint64 {
 		dataOverhead += utils.DictEntryOverhead() + utils.ZskiplistNodeOverhead(element.Member)
 	}
 
-	//  todo
+	var indexOverhead uint64 = 0
+	levelAndLevelSize := utils.GenLevelAndLevelSize(uint64(len(o.elements)))
+	for _, levelSize := range levelAndLevelSize {
+		indexOverhead += levelSize * 16
+	}
 	valueBucketOverhead := utils.FieldBucketOverhead(uint64(len(o.elements)))
-	return topLevelObjOverhead + dataOverhead + valueBucketOverhead
+	return topLevelObjOverhead + dataOverhead + indexOverhead + valueBucketOverhead
 }

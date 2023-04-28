@@ -73,8 +73,8 @@ var (
 // MemProfiler get memory use for all kinds of data stuct
 type MemProfiler struct{}
 
-// mallocOverhead used memory
-func mallocOverhead(size uint64) uint64 {
+// MallocOverhead used memory
+func MallocOverhead(size uint64) uint64 {
 	idx := sort.Search(len(jemallocSizeClasses),
 		func(i int) bool { return jemallocSizeClasses[i] >= size })
 	if idx < len(jemallocSizeClasses) {
@@ -242,16 +242,16 @@ func SdsOverhead(val string) uint64 {
 	size := len(val)
 	if size < 256 {
 		// sdshdr8
-		return mallocOverhead(uint64(sizeOfSdshdr8 + size))
+		return MallocOverhead(uint64(sizeOfSdshdr8 + size))
 	} else if size < 65536 {
 		// sdshdr16
-		return mallocOverhead(uint64(sizeOfSdshdr16 + size))
+		return MallocOverhead(uint64(sizeOfSdshdr16 + size))
 	} else if size < 4294967296 {
 		// sdshdr32
-		return mallocOverhead(uint64(sizeOfSdshdr32 + size))
+		return MallocOverhead(uint64(sizeOfSdshdr32 + size))
 	} else {
 		// sdshdr64
-		return mallocOverhead(uint64(sizeOfSdshdr64 + size))
+		return MallocOverhead(uint64(sizeOfSdshdr64 + size))
 	}
 }
 
@@ -293,7 +293,7 @@ func StringValueOverhead(val string) uint64 {
 //     struct dictEntry *next;
 // } dictEntry;
 func DictEntryOverhead() uint64 {
-	return mallocOverhead(pointerSize + pointerSize + pointerSize)
+	return MallocOverhead(pointerSize + pointerSize + pointerSize)
 }
 
 const LRU_BITS = 3 // 24 bit
@@ -307,7 +307,7 @@ const LRU_BITS = 3 // 24 bit
 //     void *ptr;
 // } robj;
 func RedisObjOverhead() uint64 {
-	return mallocOverhead(1 + LRU_BITS + 4 + pointerSize)
+	return MallocOverhead(1 + LRU_BITS + 4 + pointerSize)
 }
 
 // DictOverhead get memory use of a hashtable
@@ -329,7 +329,7 @@ func RedisObjOverhead() uint64 {
 //    int iterators;       // 当前该字典迭代器个数,迭代器用于遍历字典键值对                                           4
 //} dict;
 func DictOverhead() uint64 {
-	return mallocOverhead(pointerSize + pointerSize + DictHtOverhead()*2 + pointerSize + 4)
+	return MallocOverhead(pointerSize + pointerSize + DictHtOverhead()*2 + pointerSize + 4)
 }
 
 // DictHtOverhead 返回dictht结构体占用的内存大小
@@ -340,12 +340,12 @@ func DictOverhead() uint64 {
 //    unsigned long used;       // 该哈希表已有节点的数量                    8
 //} dictht;
 func DictHtOverhead() uint64 {
-	return mallocOverhead(pointerSize * 4)
+	return MallocOverhead(pointerSize * 4)
 }
 
 // FieldBucketOverhead 计算rehash过程中的额外开销
 func FieldBucketOverhead(size uint64) uint64 {
-	return mallocOverhead(NextPower(size)*pointerSize) + mallocOverhead(NextPower(size)/2*pointerSize)
+	return MallocOverhead(NextPower(size)*pointerSize) + MallocOverhead(NextPower(size)/2*pointerSize)
 }
 
 // QuicklistOverhead 计算Quicklist结构体开销
@@ -368,7 +368,7 @@ func FieldBucketOverhead(size uint64) uint64 {
 //} quicklist;
 func QuicklistOverhead() uint64 {
 	// 多出来的3是内存对齐的部分，最后是40个字节
-	return mallocOverhead(pointerSize + pointerSize + longSize + longSize + 2 + 2 + 1 + 3)
+	return MallocOverhead(pointerSize + pointerSize + longSize + longSize + 2 + 2 + 1 + 3)
 }
 
 // QuicklistNodeOverhead 计算QuicklistNode开销
@@ -394,7 +394,7 @@ func QuicklistOverhead() uint64 {
 //} quicklistNode;
 func QuicklistNodeOverhead() uint64 {
 	// 32个字节
-	return mallocOverhead(pointerSize + pointerSize + pointerSize + 4 + 2 + 2)
+	return MallocOverhead(pointerSize + pointerSize + pointerSize + 4 + 2 + 2)
 }
 
 // ZiplistOverhead 结构开销
@@ -404,9 +404,11 @@ func QuicklistNodeOverhead() uint64 {
 //		- `zllen` 2字节，记录压缩列表节点个数。
 //		- `zlentry`  列表节点，长度不定，由内容决定。
 //		- `zlend` 1字节，0xFF 标记压缩的结束。
+// 见ziplist.c#ziplistNew函数
 func ZiplistOverhead() uint64 {
 	zipListHeaderSize := 4 + 4 + 2
 	zipListEndSize := 1
+	// ziplist的内存分配会在每次插入元素时重新分配，最差的情况可能会导致整个ziplist连带数据重新分配一次内存。 因此不在这里应用jmalloc规则，而是当ziplist满了以后应用一次
 	return uint64(zipListHeaderSize + zipListEndSize)
 }
 
@@ -458,7 +460,7 @@ func ZlentryOverhead(previousEntryLength uint64, context string) uint64 {
 //    zskiplist *zsl; // 8
 //} zset;
 func ZsetOverhead() uint64 {
-	return mallocOverhead(pointerSize + pointerSize)
+	return MallocOverhead(pointerSize + pointerSize)
 }
 
 // ZskiplistOverhead Zskiplist结构开销
@@ -469,7 +471,7 @@ func ZsetOverhead() uint64 {
 //} zskiplist;
 func ZskiplistOverhead() uint64 {
 	// 多出来的4个字节是考虑到内存对齐到32
-	return mallocOverhead(pointerSize + pointerSize + longSize + 4 + 4)
+	return MallocOverhead(pointerSize + pointerSize + longSize + 4 + 4)
 }
 
 // ZskiplistNodeOverhead ZskiplistNode结构开销
@@ -484,7 +486,7 @@ func ZskiplistOverhead() uint64 {
 //    } level[];
 //} zskiplistNode;
 func ZskiplistNodeOverhead(element string) uint64 {
-	return mallocOverhead(pointerSize+longSize+pointerSize) + mallocOverhead(SdsOverhead(element))
+	return MallocOverhead(pointerSize+longSize+pointerSize) + MallocOverhead(SdsOverhead(element))
 }
 
 // zskiplistLevelOverhead zskiplistLevel结构开销
@@ -493,7 +495,7 @@ func ZskiplistNodeOverhead(element string) uint64 {
 //        unsigned long span; // 本层的后继节点（forward前进指针指向的就是后继节点）跨越了多少个第一层节点，用于计算节点索引值。这个值其实就是距离头节点的偏移量，从0开始计算，每个节点递增1   8
 //    }
 func zskiplistLevelOverhead(element string) uint64 {
-	return mallocOverhead(pointerSize + longSize)
+	return MallocOverhead(pointerSize + longSize)
 }
 
 func NextPower(size uint64) uint64 {
@@ -524,8 +526,8 @@ func ZslRandomLevel() uint64 {
 	return ZSKIPLIST_MAXLEVEL
 }
 
-// GenLevelAndElementCount 生成索引层数以及每层元素数量分布情况
-func GenLevelAndElementCount(elementCount uint64) {
+// GenLevelAndLevelSize 生成索引层数以及每层元素数量分布情况
+func GenLevelAndLevelSize(elementCount uint64) []uint64 {
 	levelAndElementCount := make([]uint64, 0, 32)
 	currentLevelElementCount := elementCount
 	for true {
@@ -536,4 +538,5 @@ func GenLevelAndElementCount(elementCount uint64) {
 		}
 		currentLevelElementCount = currentLevelElementCount / 4
 	}
+	return levelAndElementCount
 }
