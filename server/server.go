@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/leijianzhong001/redis_agent/internal/cleaner"
@@ -101,36 +102,52 @@ func (agentServer *RedisAgentServer) createTask(w http.ResponseWriter, req *http
 		return
 	}
 
-	// 启动任务
-	agentServer.startTask(&taskInfo)
+	// // 另外启动一个goroutine异步执行, 不要阻塞http请求
+	go func() {
+		agentServer.startTask(&taskInfo)
+	}()
 
-	response(w, SucWithMsg("submit data createTask task is success"))
+	response(w, SucWithMsg("succeeded in creating a task"))
 }
 
 func (agentServer *RedisAgentServer) startTask(taskInfo *task.GenericTaskInfo) {
-	// 另外启动一个goroutine异步执行
-	go func() {
-		// 执行任务
-		switch taskInfo.TaskType {
-		case task.CLEAN:
-			agentServer.cleaner.ExecuteClean(taskInfo)
-		case task.STATISTIC:
-			fmt.Println("todo")
-		case task.GENERATOR:
-			generateUserDataParam, err := taskInfo.GenerateUserDataParam()
-			if err != nil {
-				return
-			}
-			// 生成数据
-			generateUserDataParam.GenerateData()
+	// 匿名函数会以闭包的方式访问外围函数的变量 err, 所以后面的逻辑如果导致了err有值，那么defer函数中访问err也会有值
+	var err error
+	// 注册一个异常处理函数，防止出现异常导致主函数停止
+	defer func() {
+		if ex := recover(); ex != nil {
+			exMsg := fmt.Sprintf("task is panic %v", ex)
+			log.Errorf(exMsg)
+			err = errors.New(exMsg)
 		}
 
-		// todo 更新任务状态
+		if err != nil {
+			taskInfo.AppendFailLog(err.Error())
+			return
+		}
+
+		logMsg := fmt.Sprintf("successful completion of task %s", taskInfo.UniqueIdentifier())
+		taskInfo.AppendSucLog(logMsg)
 	}()
+
+	// 执行任务
+	switch taskInfo.TaskType {
+	case task.CLEAN:
+		err = agentServer.cleaner.ExecuteClean(taskInfo)
+	case task.STATISTIC:
+		fmt.Println("todo")
+	case task.GENERATE:
+		var generateUserDataParam *task.GenerateUserDataParam
+		generateUserDataParam, err = taskInfo.GenerateUserDataParam()
+		if err == nil {
+			// 生成数据
+			err = generateUserDataParam.GenerateData()
+		}
+	}
 }
 
 func (agentServer *RedisAgentServer) checkParam(taskInfo task.GenericTaskInfo) error {
-	if taskInfo.TaskType == task.GENERATOR {
+	if taskInfo.TaskType == task.GENERATE {
 		generateParam, err := taskInfo.GenerateUserDataParam()
 		if err != nil {
 			return err

@@ -3,13 +3,12 @@ module github.com/leijianzhong001/redis_agent
 go 1.17
 
 require (
-	github.com/alibaba/RedisShake v0.0.0-20221216064513-2937df8a3ad8
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gorilla/mux v1.8.0
+	github.com/lucasepe/codename v0.2.0
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.3
 	github.com/rs/zerolog v1.28.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/lucasepe/codename v0.2.0
 )
 
 require (

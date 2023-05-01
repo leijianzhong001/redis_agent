@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/leijianzhong001/redis_agent/internal/utils"
 	"github.com/lucasepe/codename"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 type GenerateUserDataParam struct {
 	UserName  string `json:"userName"`
 	RedisType string `json:"redisType"`
-	Count     uint64 `json:"count"`
+	Count     uint64 `json:"count,string"`
 }
 
 // CheckRedisType 检查redis数据类型是否合法
@@ -34,43 +35,50 @@ func (param GenerateUserDataParam) CheckRedisType() error {
 }
 
 // GenerateData 生成redis数据
-func (param GenerateUserDataParam) GenerateData() {
+func (param GenerateUserDataParam) GenerateData() error {
+	var err error
 	switch param.RedisType {
 	case RedisTypeString:
-		param.generateString()
+		err = param.generateString()
 	case RedisTypeList:
-		param.generateList()
+		err = param.generateList()
 	case RedisTypeHash:
-		param.generateHash()
+		err = param.generateHash()
 	case RedisTypeSet:
-		param.generateSet()
+		err = param.generateSet()
 	case RedisTypeZSet:
-		param.generateZSet()
+		err = param.generateZSet()
 	}
+	return err
 }
 
-func (param GenerateUserDataParam) generateString() {
+func (param GenerateUserDataParam) generateString() error {
 	clusterClient := utils.GetRedisClient()
 	rng, _ := codename.DefaultRNG()
 	for i := uint64(0); i < param.Count; i++ {
 		value := codename.Generate(rng, 50)
 		key := param.UserName + ":" + fmt.Sprintf("%d", i)
 		clusterClient.Set(utils.Ctx, key, value, 0)
+		if i != 0 && i%100 == 0 {
+			log.Infof("user %s 100 string hash inserted", param.UserName)
+		}
 	}
+	log.Infof("user %s generate string %d data done", param.UserName, param.Count)
+	return nil
 }
 
-func (param GenerateUserDataParam) generateList() {
-
+func (param GenerateUserDataParam) generateList() error {
+	return nil
 }
 
-func (param GenerateUserDataParam) generateHash() {
-
+func (param GenerateUserDataParam) generateHash() error {
+	return nil
 }
 
-func (param GenerateUserDataParam) generateSet() {
-
+func (param GenerateUserDataParam) generateSet() error {
+	return nil
 }
 
-func (param GenerateUserDataParam) generateZSet() {
-
+func (param GenerateUserDataParam) generateZSet() error {
+	return nil
 }

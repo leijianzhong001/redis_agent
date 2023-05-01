@@ -18,18 +18,8 @@ var batchFloat = 500
 
 type SystemDataCleaner struct{}
 
-func (cleaner *SystemDataCleaner) ExecuteClean(taskInfo *task.GenericTaskInfo) {
-	err := cleaner.Clean(taskInfo)
-	if err != nil {
-		// 更新任务状态为失败
-		taskInfo.Status = task.FAIL
-		// 追加日志
-		taskInfo.TaskLog = append(taskInfo.TaskLog, task.FormatLog(err.Error()))
-		return
-	}
-	// 更新任务状态为成功
-	taskInfo.Status = task.SUC
-	taskInfo.TaskLog = append(taskInfo.TaskLog, task.FormatLog("data cleaning task successfully completed"))
+func (cleaner *SystemDataCleaner) ExecuteClean(taskInfo *task.GenericTaskInfo) error {
+	return cleaner.Clean(taskInfo)
 }
 
 // Clean system data.

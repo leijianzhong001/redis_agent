@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/leijianzhong001/redis_agent/internal/cleaner"
 	"github.com/leijianzhong001/redis_agent/server"
+	"github.com/leijianzhong001/redis_agent/task"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -33,10 +35,20 @@ func main() {
 		log.Println("redis-agent server start failed:", err)
 		return
 	}
+
 	log.Println("redis-agent server start ok...")
 	log.Println("Submit a Get  request to http://ip:6389/serverStatus to test server is ok")
-	log.Println("Submit a Post request to http://ip:6389/cleanTask to start cleaning up the data, param like this {\"taskId\":1234,\"cursor\":0,\"userName\":\"snrs\",\"status\":0,\"startTime\":null,\"lastScanTime\":null,\"keyCount\":0}")
-	log.Println("Submit a Get  request to http://ip:6389/cleanTask/{taskId} to get task information")
+	exampleParam := task.GenericTaskInfo{
+		TaskId:   1234,
+		TaskType: 0,
+		TaskParam: map[string]string{
+			"cursor":   "0",
+			"userName": "SNRS",
+		},
+	}
+	jsonByte, _ := json.Marshal(exampleParam)
+	log.Println("Submit a Post request to http://ip:6389/task to start a task, param like this:", string(jsonByte))
+	log.Println("Submit a Get  request to http://ip:6389/task/{taskId} to get task information")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)

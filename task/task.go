@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"github.com/leijianzhong001/redis_agent/internal/log"
 	"sync"
 	"time"
 )
@@ -19,7 +19,7 @@ const (
 const (
 	CLEAN     = iota // CLEAN 数据清理
 	STATISTIC        // STATISTIC 内存占用统计
-	GENERATOR = 2
+	GENERATE  = 2
 )
 
 var locker sync.RWMutex
@@ -80,7 +80,7 @@ func (taskInfo *GenericTaskInfo) CleanTaskParam() (*CleanTaskParam, error) {
 
 // GenerateUserDataParam 从map中得到CleanTaskParam参数
 func (taskInfo *GenericTaskInfo) GenerateUserDataParam() (*GenerateUserDataParam, error) {
-	if taskInfo.TaskType != GENERATOR {
+	if taskInfo.TaskType != GENERATE {
 		return nil, errors.New(fmt.Sprintf("Task type error: %d, you can't call this method generateUserDataParam", taskInfo.TaskType))
 	}
 
@@ -107,7 +107,7 @@ func (taskInfo *GenericTaskInfo) GenerateUserDataParam() (*GenerateUserDataParam
 }
 
 func (taskInfo *GenericTaskInfo) CheckTaskType() error {
-	if taskInfo.TaskType != CLEAN && taskInfo.TaskType != STATISTIC && taskInfo.TaskType != GENERATOR {
+	if taskInfo.TaskType != CLEAN && taskInfo.TaskType != STATISTIC && taskInfo.TaskType != GENERATE {
 		return errors.New("task Type must be 0/1/2")
 	}
 	return nil
@@ -117,35 +117,19 @@ func (taskInfo *GenericTaskInfo) CreateTask() error {
 	locker.Lock()
 	defer locker.Unlock()
 	_, ok := tasks[taskInfo.TaskId]
-	if !ok {
-		// 说明该任务第一次执行
-		taskInfo.Status = TODO
-		taskInfo.StartTime = time.Now()
-		taskInfo.LastScanTime = time.Now()
-		taskInfo.TaskLog = make([]string, 0, 10)
-		tasks[taskInfo.TaskId] = taskInfo
-	}
-
-	if taskInfo.Status == SUC {
-		// 说明已经成功执行过一次了
-		logMsg := fmt.Sprintf("%d clean task is already exec successfully, can't execute again!", taskInfo.TaskId)
-		log.Info(logMsg)
-		taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog(logMsg))
+	if ok {
+		logMsg := fmt.Sprintf("%d task is already exists, can't create again!", taskInfo.TaskId)
+		log.Infof(logMsg)
 		return errors.New(logMsg)
 	}
 
-	if taskInfo.Status == PROGRESS {
-		// 说明是重复提交
-		logMsg := fmt.Sprintf("%d The clean task is in progress and cannot be executed again!", taskInfo.TaskId)
-		log.Info(logMsg)
-		taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog(logMsg))
-		return errors.New(logMsg)
-	}
-
-	// 保存该任务到内存中
-	taskInfo.StartTime = time.Now()
+	// 说明该任务第一次执行 保存该任务到内存中
 	taskInfo.Status = PROGRESS
-	taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog("data cleaning task starts"))
+	taskInfo.StartTime = time.Now()
+	taskInfo.LastScanTime = time.Now()
+	taskInfo.TaskLog = make([]string, 0, 10)
+	taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog("task starts"))
+	tasks[taskInfo.TaskId] = taskInfo
 	return nil
 }
 
@@ -165,4 +149,16 @@ func (taskInfo *GenericTaskInfo) AppendFailLog(log string) {
 	taskInfo.Status = FAIL
 	// 追加日志
 	taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog(log))
+}
+
+// AppendSucLog 追加成功日志
+func (taskInfo *GenericTaskInfo) AppendSucLog(log string) {
+	// 更新任务状态为失败
+	taskInfo.Status = SUC
+	// 追加日志
+	taskInfo.TaskLog = append(taskInfo.TaskLog, FormatLog(log))
+}
+
+func (taskInfo *GenericTaskInfo) UniqueIdentifier() string {
+	return fmt.Sprintf("%d-%d", taskInfo.TaskId, taskInfo.TaskType)
 }
