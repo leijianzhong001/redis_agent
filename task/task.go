@@ -50,7 +50,7 @@ type GenericTaskInfo struct {
 // CleanTaskParam 数据清理任务独有参数
 type CleanTaskParam struct {
 	// 当前游标
-	Cursor uint64 `json:"cursor"`
+	Cursor uint64 `json:"cursor,string"`
 	// 用户名称
 	UserName string `json:"userName"`
 }
