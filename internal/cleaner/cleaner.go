@@ -51,7 +51,7 @@ func (cleaner *SystemDataCleaner) Clean(taskInfo *task.GenericTaskInfo) error {
 			return err
 		}
 
-		// 按照slot进行分组
+		// 按照slot进行分组, 因为unlink命令后面跟着的key列表必须属于同一个slot
 		for _, key := range keys {
 			// 获得该key的slot
 			slot := utils.Slot(key)

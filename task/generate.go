@@ -53,14 +53,14 @@ func (param GenerateUserDataParam) GenerateData() error {
 }
 
 func (param GenerateUserDataParam) generateString() error {
-	clusterClient := utils.GetRedisClient()
+	clusterClient := utils.GetRedisClusterClient()
 	rng, _ := codename.DefaultRNG()
 	for i := uint64(0); i < param.Count; i++ {
 		value := codename.Generate(rng, 50)
 		key := param.UserName + ":" + fmt.Sprintf("%d", i)
 		clusterClient.Set(utils.Ctx, key, value, 0)
-		if i != 0 && i%100 == 0 {
-			log.Infof("user %s 100 string hash inserted", param.UserName)
+		if i != 0 && i%1000 == 0 {
+			log.Infof("user %s 1000 string hash inserted", param.UserName)
 		}
 	}
 	log.Infof("user %s generate string %d data done", param.UserName, param.Count)
