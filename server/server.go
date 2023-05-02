@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/leijianzhong001/redis_agent/internal/cleaner"
+	"github.com/leijianzhong001/redis_agent/internal/memanalysis"
 	"github.com/leijianzhong001/redis_agent/internal/utils"
 	"github.com/leijianzhong001/redis_agent/server/middleware"
 	"github.com/leijianzhong001/redis_agent/task"
@@ -37,6 +38,12 @@ func NewRedisAgentServer(addr string, cleaner *cleaner.SystemDataCleaner) *Redis
 
 	router.HandleFunc("/serverStatus", agentServer.serverStatus).Methods("GET")
 
+	// 获取全量任务列表
+	router.HandleFunc("/tasks", agentServer.getAllTask).Methods("GET")
+
+	// 获取数据分析结果
+	router.HandleFunc("/analysisInfo", agentServer.analysisInfo).Methods("GET")
+
 	agentServer.httpServer.Handler = middleware.Logging(middleware.Validating(router))
 	return agentServer
 }
@@ -58,10 +65,14 @@ func (agentServer *RedisAgentServer) ListenAndServe() (<-chan error, error) {
 }
 
 func (agentServer *RedisAgentServer) Shutdown(ctx context.Context) error {
-	redisClient := utils.GetRedisClient()
-	if redisClient != nil {
+	if redisClient := utils.GetRedisClient(); redisClient != nil {
 		if result, err := redisClient.Shutdown(ctx).Result(); err != nil {
 			log.Error("shutdown redis client error", result, err)
+		}
+	}
+	if clusterClient := utils.GetRedisClusterClient(); clusterClient != nil {
+		if result, err := clusterClient.Shutdown(ctx).Result(); err != nil {
+			log.Error("shutdown redis cluster client error", result, err)
 		}
 	}
 
@@ -135,7 +146,7 @@ func (agentServer *RedisAgentServer) startTask(taskInfo *task.GenericTaskInfo) {
 	case task.CLEAN:
 		err = agentServer.cleaner.ExecuteClean(taskInfo)
 	case task.STATISTIC:
-		fmt.Println("todo")
+		err = memanalysis.ExecuteStatistic()
 	case task.GENERATE:
 		var generateUserDataParam *task.GenerateUserDataParam
 		generateUserDataParam, err = taskInfo.GenerateUserDataParam()
@@ -159,6 +170,13 @@ func (agentServer *RedisAgentServer) checkParam(taskInfo task.GenericTaskInfo) e
 
 		if generateParam.Count <= 0 || generateParam.Count > 99999 {
 			return err
+		}
+	}
+
+	if taskInfo.TaskType == task.STATISTIC {
+		if task.HasProcessStatisticTask() {
+			// 有正在进行中的数据分析任务, 直接返回
+			return errors.New("there are already ongoing data analysis tasks in progress, refusing to submit new tasks")
 		}
 	}
 	return nil
@@ -186,6 +204,17 @@ func (agentServer *RedisAgentServer) reportProgress(w http.ResponseWriter, req *
 
 func (agentServer *RedisAgentServer) serverStatus(w http.ResponseWriter, _ *http.Request) {
 	response(w, SucWithMsg("OK"))
+}
+
+// getAllTask 获取任务列表
+func (agentServer *RedisAgentServer) getAllTask(w http.ResponseWriter, _ *http.Request) {
+	taskList := task.GetTaskList()
+	response(w, SucWithData(taskList))
+}
+
+func (agentServer *RedisAgentServer) analysisInfo(w http.ResponseWriter, _ *http.Request) {
+	userAndOverhead := memanalysis.GetUserAndOverhead()
+	response(w, SucWithData(userAndOverhead))
 }
 
 func response(w http.ResponseWriter, v interface{}) {

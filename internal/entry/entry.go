@@ -3,20 +3,13 @@ package entry
 import "fmt"
 
 type Entry struct {
-	Id          uint64
-	IsBase      bool //  whether the command is decoded from dump.rdb file
-	DbId        int
-	Argv        []string
-	TimestampMs uint64
+	Id     uint64
+	IsBase bool //  whether the command is decoded from dump.rdb file
+	DbId   int
+	Argv   []string
 
-	CmdName string
-	Group   string
-	Keys    []string
-	Slots   []int
-
-	// for statistics
-	Offset      int64
-	EncodedSize uint64 // the size of the entry after encode
+	Key      string // 当前key
+	Overhead uint64 // 当前key的内存开销,单位是字节
 }
 
 func NewEntry() *Entry {

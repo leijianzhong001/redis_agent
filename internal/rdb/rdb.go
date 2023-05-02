@@ -172,19 +172,16 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			anotherReader := io.TeeReader(rd, &value)
 			o := types.ParseObject(anotherReader, typeByte, key)
 
-			// 非过期的key
-			if ld.expireMs != 1 {
-				// 将key重写为对应的命令
-				cmds := o.Rewrite()
-				for _, cmd := range cmds {
-					e := entry.NewEntry()
-					e.IsBase = true
-					e.DbId = ld.nowDBId
-					e.Argv = cmd
-					ld.ch <- e
-				}
-			}
-			// 复位
+			// 计算当前key的内存开销
+			overhead := o.MemOverhead()
+			e := entry.NewEntry()
+			e.IsBase = true
+			e.DbId = ld.nowDBId
+			e.Key = key
+			e.Overhead = overhead
+			ld.ch <- e
+
+			// 发送到channel之后复位
 			ld.expireMs = 0
 			ld.idle = 0
 			ld.freq = 0
@@ -192,7 +189,6 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 		select {
 		case <-tick:
 			UpdateRDBSentSize()
-
 			// 检查是否为主节点（因为可能发生主从切换）。
 			infoReplication, _ := utils.GetRedisClient().Info(context.Background(), "Replication").Result()
 			if utils.ParseInfoProp(infoReplication, "role") == "master" {

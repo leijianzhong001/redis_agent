@@ -19,7 +19,7 @@ const (
 const (
 	CLEAN     = iota // CLEAN 数据清理
 	STATISTIC        // STATISTIC 内存占用统计
-	GENERATE  = 2
+	GENERATE
 )
 
 var locker sync.RWMutex
@@ -53,10 +53,6 @@ type CleanTaskParam struct {
 	Cursor uint64 `json:"cursor,string"`
 	// 用户名称
 	UserName string `json:"userName"`
-}
-
-// StatisticTaskParam 数据统计任务独有参数
-type StatisticTaskParam struct {
 }
 
 // CleanTaskParam 从map中得到CleanTaskParam参数
@@ -161,4 +157,34 @@ func (taskInfo *GenericTaskInfo) AppendSucLog(log string) {
 
 func (taskInfo *GenericTaskInfo) UniqueIdentifier() string {
 	return fmt.Sprintf("%d-%d", taskInfo.TaskId, taskInfo.TaskType)
+}
+
+func GetTaskList() map[int]*GenericTaskInfo {
+	var newTaskList map[int]*GenericTaskInfo
+	for k, v := range tasks {
+		newTaskList[k] = v
+	}
+	return newTaskList
+}
+
+func GetStatisticTaskList() map[int]*GenericTaskInfo {
+	statisticTasks := make(map[int]*GenericTaskInfo, 10)
+	for key, value := range tasks {
+		if value.TaskType != STATISTIC {
+			continue
+		}
+		statisticTasks[key] = value
+	}
+	return statisticTasks
+}
+
+func HasProcessStatisticTask() bool {
+	locker.Lock()
+	defer locker.Unlock()
+	for _, taskInfo := range tasks {
+		if taskInfo.TaskType == STATISTIC && taskInfo.Status == PROGRESS {
+			return true
+		}
+	}
+	return false
 }

@@ -59,7 +59,7 @@ func main() {
 		return
 	case <-c:
 		log.Println("redis-agent program is exiting...")
-		ctx, cf := context.WithTimeout(context.Background(), time.Second)
+		ctx, cf := context.WithTimeout(context.Background(), time.Second*5)
 		defer cf()
 		err = srv.Shutdown(ctx)
 	}
