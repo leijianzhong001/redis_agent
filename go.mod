@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/lucasepe/codename v0.2.0
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.3
+	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.28.0
 	github.com/sirupsen/logrus v1.9.0
 )

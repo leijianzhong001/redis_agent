@@ -66,13 +66,13 @@ func (agentServer *RedisAgentServer) ListenAndServe() (<-chan error, error) {
 
 func (agentServer *RedisAgentServer) Shutdown(ctx context.Context) error {
 	if redisClient := utils.GetRedisClient(); redisClient != nil {
-		if result, err := redisClient.Shutdown(ctx).Result(); err != nil {
-			log.Error("shutdown redis client error", result, err)
+		if err := redisClient.Close(); err != nil {
+			log.Error("shutdown redis client error", err)
 		}
 	}
 	if clusterClient := utils.GetRedisClusterClient(); clusterClient != nil {
-		if result, err := clusterClient.Shutdown(ctx).Result(); err != nil {
-			log.Error("shutdown redis cluster client error", result, err)
+		if err := clusterClient.Close(); err != nil {
+			log.Error("shutdown redis cluster client error", err)
 		}
 	}
 

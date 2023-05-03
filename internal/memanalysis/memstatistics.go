@@ -35,7 +35,7 @@ func Statistic() error {
 	ch := rdbReader.StartRead()
 	for entry := range ch {
 		key := entry.Key
-		if len(key) == 0 || !strings.ContainsRune(key, ':') || len(strings.Split(key, ":")) != 2 {
+		if len(key) == 0 || !strings.ContainsRune(key, ':') || len(strings.Split(key, ":")) < 2 {
 			log.Warnf("key %s is not match *:*, skip", key)
 			continue
 		}
@@ -47,12 +47,17 @@ func Statistic() error {
 			userAndOverheadTemp[userName] = 0
 		}
 
+		log.Infof("key: %s, overhead: %d", key, entry.Overhead)
 		userAndOverheadTemp[userName] += entry.Overhead
 	}
 
 	log.Infof("memory analysis is done, replace variable userAndOverhead")
 	// 完成以后,替换原来的统计结果
 	userAndOverhead = userAndOverheadTemp
+
+	for sys, overhead := range userAndOverhead {
+		log.Infof("sys: %s, overhead: %d", sys, overhead)
+	}
 	return nil
 }
 
