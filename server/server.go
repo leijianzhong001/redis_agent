@@ -133,6 +133,7 @@ func (agentServer *RedisAgentServer) startTask(taskInfo *task.GenericTaskInfo) {
 		}
 
 		if err != nil {
+			log.Errorf("task %d execution failure: %v", taskInfo.TaskId, err)
 			taskInfo.AppendFailLog(err.Error())
 			return
 		}

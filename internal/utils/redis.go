@@ -22,9 +22,9 @@ func GetRedisClient() *redis.Client {
 	defer lock.Unlock()
 	if redisClient == nil {
 		redisClient = redis.NewClient(&redis.Options{
-			Addr: "localhost:6379", //"localhost:6379"
-			//Username: "default",
-			//Password: "c4b883c1cba107078b6e0eb6f5677b6a4fcf4046639f2d89a5ec43620efe6e12",
+			Addr:     "localhost:6379", //"localhost:6379"
+			Username: "default",
+			Password: "123",
 		})
 	}
 	return redisClient
@@ -42,6 +42,8 @@ func GetRedisClusterClient() *redis.ClusterClient {
 		redisClusterClient = redis.NewClusterClient(&redis.ClusterOptions{
 			Addrs:        []string{"localhost:6379"},
 			MaxRedirects: 5,
+			Username:     "default",
+			Password:     "123",
 		})
 	}
 	return redisClusterClient

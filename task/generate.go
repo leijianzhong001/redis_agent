@@ -58,7 +58,12 @@ func (param GenerateUserDataParam) generateString() error {
 	for i := uint64(0); i < param.Count; i++ {
 		value := codename.Generate(rng, 50)
 		key := param.UserName + ":" + fmt.Sprintf("%d", i)
-		clusterClient.Set(utils.Ctx, key, value, 0)
+		_, err := clusterClient.Set(utils.Ctx, key, value, 0).Result()
+		if err != nil {
+			log.Errorf("generate string data error: %v", err)
+			return err
+		}
+
 		if i != 0 && i%1000 == 0 {
 			log.Infof("user %s 1000 string hash inserted", param.UserName)
 		}
