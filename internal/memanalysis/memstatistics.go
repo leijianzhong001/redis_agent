@@ -26,8 +26,10 @@ func Statistic() error {
 	// 到从节点上 dump rdb 文件
 	err := dumpRdb()
 	if err != nil {
+		log.Errorf("dump rdb error: %v", err)
 		return err
 	}
+	log.Infof("dump rdb success")
 
 	// 从/data下读取dump.rdb文件
 	rdbReader := reader.NewRDBReader("/data/dump.rdb")
