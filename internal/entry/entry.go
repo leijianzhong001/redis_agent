@@ -8,8 +8,9 @@ type Entry struct {
 	DbId   int
 	Argv   []string
 
-	Key      string // 当前key
-	Overhead uint64 // 当前key的内存开销,单位是字节
+	Key         string // 当前key
+	Overhead    uint64 // 当前key的内存开销,单位是字节
+	IsExpireKey bool   // 是否是带过期时间的key
 }
 
 func NewEntry() *Entry {

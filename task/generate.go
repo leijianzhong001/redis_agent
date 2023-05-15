@@ -6,6 +6,7 @@ import (
 	"github.com/leijianzhong001/redis_agent/internal/utils"
 	"github.com/lucasepe/codename"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 )
 
 const (
@@ -56,7 +57,7 @@ func (param GenerateUserDataParam) generateString() error {
 	clusterClient := utils.GetRedisClusterClient()
 	rng, _ := codename.DefaultRNG()
 	for i := uint64(0); i < param.Count; i++ {
-		value := codename.Generate(rng, 50)
+		value := codename.Generate(rng, rand.Intn(70))
 		key := param.UserName + ":" + fmt.Sprintf("%d", i)
 		_, err := clusterClient.Set(utils.Ctx, key, value, 0).Result()
 		if err != nil {

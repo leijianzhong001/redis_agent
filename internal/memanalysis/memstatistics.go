@@ -2,6 +2,7 @@ package memanalysis
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/leijianzhong001/redis_agent/internal/reader"
 	"github.com/leijianzhong001/redis_agent/internal/utils"
 	"github.com/pkg/errors"
@@ -11,10 +12,20 @@ import (
 )
 
 var ctx = context.Background()
-var userAndOverhead map[string]uint64
+var userAndOverhead map[string]*UserOverhead
 
-// StatisticTaskParam 数据统计任务独有参数
-type StatisticTaskParam struct {
+// UserOverhead 用户和开销数据
+type UserOverhead struct {
+	// 用户
+	UserName string `json:"userName"`
+	// key数量
+	KeyCount uint64 `json:"keyCount"`
+	// 过期key数量
+	ExpireKeyCount uint64 `json:"expireKeyCount"`
+	// 当前用户的内存开销
+	Overhead uint64 `json:"overhead"`
+	// 内存分析时间
+	AnalysisDate time.Time `json:"analysisDate"`
 }
 
 func ExecuteStatistic() error {
@@ -22,7 +33,7 @@ func ExecuteStatistic() error {
 }
 
 func Statistic() error {
-	userAndOverheadTemp := make(map[string]uint64, 16)
+	userAndOverheadTemp := make(map[string]*UserOverhead, 16)
 	// 到从节点上 dump rdb 文件
 	err := dumpRdb()
 	if err != nil {
@@ -44,21 +55,75 @@ func Statistic() error {
 		userName := strings.Split(key, ":")[0]
 		if _, ok := userAndOverheadTemp[userName]; !ok {
 			// 为空的话, 初始化一下
-			userAndOverheadTemp[userName] = 0
+			userAndOverheadTemp[userName] = &UserOverhead{
+				UserName:     userName,
+				AnalysisDate: time.Now(),
+			}
 		}
 
-		log.Infof("key: %s, overhead: %d", key, entry.Overhead)
-		userAndOverheadTemp[userName] += entry.Overhead
+		userOverhead := userAndOverheadTemp[userName]
+		userOverhead.Overhead += entry.Overhead
+		userOverhead.KeyCount++
+		if entry.IsExpireKey {
+			userOverhead.ExpireKeyCount++
+		}
 	}
+
+	// 计算每个系统的key的rehash的开销
+	keyRehashOverhead(userAndOverheadTemp)
+
+	// 计算过期字典rehash开销
+	expireKeyRehashOverhead(userAndOverheadTemp)
 
 	log.Infof("memory analysis is done, replace variable userAndOverhead")
 	// 完成以后,替换原来的统计结果
 	userAndOverhead = userAndOverheadTemp
 
 	for sys, overhead := range userAndOverhead {
-		log.Infof("sys: %s, overhead: %d", sys, overhead)
+		data, _ := json.Marshal(overhead)
+		log.Infof("sys: %s, overhead: %s", sys, data)
 	}
 	return nil
+}
+
+// keyRehashOverhead 计算key的rehash开销
+func keyRehashOverhead(userAndOverheadTemp map[string]*UserOverhead) {
+	// key的总数量
+	var allKeyCount uint64
+	for _, overhead := range userAndOverheadTemp {
+		allKeyCount += overhead.KeyCount
+	}
+
+	// 以当前的key为规模,计算rehash的额外开销
+	allRehashOverhead := utils.FieldBucketOverhead(allKeyCount)
+	for _, overhead := range userAndOverheadTemp {
+		// 这里计算当前用户的key数量占总数量的比例, 不需要精确计算, 得到大概的比例就行
+		proportion := float64(overhead.KeyCount) / float64(allKeyCount)
+		// 将这里的比例应用到rehash的占用上
+		currentUserRehashOverhead := float64(allRehashOverhead) * proportion
+		// 将当前用户的rehash开销累加到总值上
+		overhead.Overhead += uint64(currentUserRehashOverhead)
+	}
+}
+
+// expireKeyRehashOverhead 计算过期key的rehash开销
+func expireKeyRehashOverhead(userAndOverheadTemp map[string]*UserOverhead) {
+	// key的总数量
+	var allExpireKeyCount uint64
+	for _, overhead := range userAndOverheadTemp {
+		allExpireKeyCount += overhead.ExpireKeyCount
+	}
+
+	// 以当前的key为规模,计算rehash的额外开销
+	allRehashOverhead := utils.FieldBucketOverhead(allExpireKeyCount)
+	for _, overhead := range userAndOverheadTemp {
+		// 这里计算当前用户的key数量占总数量的比例, 不需要精确计算, 得到大概的比例就行
+		proportion := float64(overhead.ExpireKeyCount) / float64(allExpireKeyCount)
+		// 将这里的比例应用到rehash的占用上
+		currentUserRehashOverhead := float64(allRehashOverhead) * proportion
+		// 将当前用户的rehash开销累加到总值上
+		overhead.Overhead += uint64(currentUserRehashOverhead)
+	}
 }
 
 // dumpRdb 到从节点上dump rdb文件
@@ -106,6 +171,6 @@ func dumpRdb() error {
 	return nil
 }
 
-func GetUserAndOverhead() map[string]uint64 {
+func GetUserAndOverhead() map[string]*UserOverhead {
 	return userAndOverhead
 }

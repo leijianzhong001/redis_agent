@@ -173,11 +173,16 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			o := types.ParseObject(anotherReader, typeByte, key)
 
 			// 计算当前key的内存开销
-			overhead := o.MemOverhead()
 			e := entry.NewEntry()
 			e.IsBase = true
 			e.DbId = ld.nowDBId
 			e.Key = key
+			overhead := o.MemOverhead()
+			if ld.expireMs != 0 {
+				// 有过期时间,加上过期时间占用.过期字典中一个key的总占用为24
+				overhead += 24
+				e.IsExpireKey = true
+			}
 			e.Overhead = overhead
 			ld.ch <- e
 
